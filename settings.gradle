@@ -1,0 +1,2 @@
+include ':app', ':upgrade_base'
+rootProject.name='aod_upgrade'
