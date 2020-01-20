@@ -5,8 +5,9 @@ import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
-import com.stonehiy.updrade.base.net.Net
-import com.stonehiy.updrade.base.net.RequestNet
+import com.stonehiy.updrade.base.net.Download
+import com.stonehiy.updrade.base.net.Version
+import com.stonehiy.updrade.base.net.RequestVersion
 import com.stonehiy.upgrade.entity.VersionEntity
 import com.stonehiy.upgrade.net.Api
 import com.stonehiy.upgrade.net.BaseSource
@@ -15,13 +16,20 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.lang.Exception
+import android.util.Log
+
 
 class MainActivity : AppCompatActivity() {
 
+    private val TAG = MainActivity::class.java.name
+
     private val viewModelCoroutineScope: ViewModelCoroutineScope = ViewModelCoroutineScope()
 
-    private var net: Net<VersionEntity>? = null
+    private var requestVersionNet: Version<VersionEntity>? = null
+    private var requestDownloadNet: Download? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,24 +37,28 @@ class MainActivity : AppCompatActivity() {
 
 
         btn_check_version.setOnClickListener {
-            net = RequestNet.requestVersionNet<VersionEntity>(this) {
-                version()
-            } as Net<VersionEntity>
-            net?.onDownload { u, download ->
-                if (download) {
-                    //需要版本更新
-                    showVersionDialog(u)
-                } else {
-                    Toast.makeText(MainActivity@ this, "不需要更新", Toast.LENGTH_SHORT).show()
-                }
-
-            }
-            net?.onFail {
-                Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
-
-            }
+            requestVersion()
         }
 
+    }
+
+    private fun requestVersion() {
+        requestVersionNet = RequestVersion.requestVersionNet<VersionEntity>(this) {
+            version()
+        } as Version<VersionEntity>
+        requestVersionNet?.onDownload { u, download ->
+            if (download) {
+                //需要版本更新
+                showVersionDialog(u)
+            } else {
+                Toast.makeText(MainActivity@ this, "不需要更新", Toast.LENGTH_SHORT).show()
+            }
+
+        }
+        requestVersionNet?.onFail {
+            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
+
+        }
     }
 
     private fun version() {
@@ -57,14 +69,15 @@ class MainActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 try {
                     val await = api.checkVersion().await()
-                    if (await.code() == 200) {
+                    if (await.isSuccessful) {
                         val versionEntity = await.body()
-                        versionEntity?.let { net?.success(it) }
+                        versionEntity?.let { requestVersionNet?.success(it) }
+
                     } else {
-                        net?.fail(await.errorBody()?.string())
+                        requestVersionNet?.fail(await.errorBody()?.string())
                     }
                 } catch (e: Exception) {
-                    net?.fail(e.message)
+                    requestVersionNet?.fail(e.message)
                 }
 
             }
@@ -79,19 +92,77 @@ class MainActivity : AppCompatActivity() {
         viewModelCoroutineScope.close()
     }
 
-    private fun showVersionDialog(versionEntity: VersionEntity) {
-        val negativeButton = AlertDialog.Builder(this)
-            .setTitle(versionEntity.title())
-            .setMessage(versionEntity.msg)
-            .setPositiveButton("升级") { d: DialogInterface, i: Int ->
-                Toast.makeText(this, "升级", Toast.LENGTH_SHORT).show()
+    private fun download(fileUrl: String) {
+        val api = BaseSource
+            .instance
+            .create(Api::class.java)
+
+        viewModelCoroutineScope.launch {
+            withContext(Dispatchers.Main) {
+                try {
+                    val await = api.downloadApk(fileUrl).await()
+                    if (await.isSuccessful) {
+                        var body = await.body()
+                        val byteStream = body?.byteStream()
+                        val contentLength = body?.contentLength() ?: 0L
+                        requestDownloadNet?.writeFile2Disk(
+                            byteStream,
+                            contentLength,
+                            File("${getExternalFilesDir(null)?.absoluteFile}${File.separator}${fileUrl}")!!
+                        )
+
+                    } else {
+                        requestVersionNet?.fail(await.errorBody()?.string())
+                    }
+                } catch (e: Exception) {
+                    requestVersionNet?.fail(e.message)
+                }
 
             }
+
+        }
+    }
+
+    private fun showVersionDialog(versionEntity: VersionEntity) {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("${versionEntity.title()} - ${versionEntity.versionName()} - ${versionEntity.versionCode()}")
+            .setMessage(versionEntity.msg)
+            .setPositiveButton("升级") { d: DialogInterface, i: Int ->
+                //                Toast.makeText(this, versionEntity.versionName, Toast.LENGTH_SHORT) .show()
+                requestDownload(versionEntity)
+            }
             .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
-//                Toast.makeText(this, "取消", Toast.LENGTH_SHORT).show()
+                //                Toast.makeText(this, "取消", Toast.LENGTH_SHORT).show()
 
             }
             .show()
+
+
+    }
+
+    private fun requestDownload(versionEntity: VersionEntity) {
+        requestDownloadNet = RequestVersion.requestDownloadNet {
+            versionEntity.apkUrl()?.let {
+                download(it)
+            }
+
+        }
+        requestDownloadNet?.onStart {
+            Log.i(TAG, "onStart")
+
+        }
+        requestDownloadNet?.onFailure {
+            Log.i(TAG, "onFailure = $it")
+
+        }
+        requestDownloadNet?.onFinish {
+            Log.i(TAG, "onFinish =  $it")
+
+        }
+        requestDownloadNet?.onProgress {
+            Log.i(TAG, "onProgress =  $it")
+        }
+
     }
 
 }

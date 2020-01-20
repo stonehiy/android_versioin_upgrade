@@ -5,7 +5,7 @@ import com.stonehiy.updrade.base.Upgrade
 import android.os.Build
 
 
-class Net<U : Upgrade>(private val ctx: Context) : INet<U> {
+class Version<U : Upgrade>(private val ctx: Context) : IVersion<U> {
 
     private var _onDownload: ((u: U, download: Boolean) -> Unit)? = null
     private var _onFail: ((error: String?) -> Unit)? = null
@@ -35,11 +35,13 @@ class Net<U : Upgrade>(private val ctx: Context) : INet<U> {
         _onFail?.invoke(error)
     }
 
-    fun onDownload(listener: (u: U, download: Boolean) -> Unit) {
+    fun onDownload(listener: (u: U, download: Boolean) -> Unit): IVersion<U> {
         _onDownload = listener
+        return this
     }
 
-    fun onFail(listener: (error: String?) -> Unit) {
+    fun onFail(listener: (error: String?) -> Unit): IVersion<U> {
         _onFail = listener
+        return this
     }
 }
