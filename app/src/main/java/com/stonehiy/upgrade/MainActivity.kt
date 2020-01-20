@@ -19,6 +19,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.Exception
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
+import kotlinx.android.synthetic.main.dialog_download.*
+import kotlinx.coroutines.isActive
 
 
 class MainActivity : AppCompatActivity() {
@@ -29,6 +33,8 @@ class MainActivity : AppCompatActivity() {
 
     private var requestVersionNet: Version<VersionEntity>? = null
     private var requestDownloadNet: Download? = null
+
+    private var downloadDialog: AlertDialog? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val await = api.downloadApk(fileUrl).await()
                     if (await.isSuccessful) {
-                        var body = await.body()
+                        val body = await.body()
                         val byteStream = body?.byteStream()
                         val contentLength = body?.contentLength() ?: 0L
                         requestDownloadNet?.writeFile2Disk(
@@ -140,6 +146,19 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun showDownloadDialog(apkName: String) {
+        downloadDialog = AlertDialog.Builder(this)
+            .setTitle("Apk下载")
+            .setMessage(apkName)
+            .setView(View.inflate(this, R.layout.dialog_download, null))
+            .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
+//                if (viewModelCoroutineScope.isActive) {
+//                    viewModelCoroutineScope.close()
+//                }
+            }
+            .show()
+    }
+
     private fun requestDownload(versionEntity: VersionEntity) {
         requestDownloadNet = RequestVersion.requestDownloadNet {
             versionEntity.apkUrl()?.let {
@@ -148,19 +167,24 @@ class MainActivity : AppCompatActivity() {
 
         }
         requestDownloadNet?.onStart {
-            Log.i(TAG, "onStart")
+            showDownloadDialog(versionEntity.apkUrl)
 
         }
         requestDownloadNet?.onFailure {
             Log.i(TAG, "onFailure = $it")
+            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
 
         }
         requestDownloadNet?.onFinish {
             Log.i(TAG, "onFinish =  $it")
+            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
 
         }
         requestDownloadNet?.onProgress {
             Log.i(TAG, "onProgress =  $it")
+            val progressBar: ProgressBar? =
+                downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
+            progressBar?.progress = it
         }
 
     }
