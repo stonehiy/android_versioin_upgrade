@@ -1,13 +1,21 @@
 package com.stonehiy.upgrade
 
+import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.Toast
 import com.stonehiy.updrade.base.net.Download
-import com.stonehiy.updrade.base.net.Version
 import com.stonehiy.updrade.base.net.RequestVersion
+import com.stonehiy.updrade.base.net.Version
 import com.stonehiy.upgrade.entity.VersionEntity
 import com.stonehiy.upgrade.net.Api
 import com.stonehiy.upgrade.net.BaseSource
@@ -17,12 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.lang.Exception
-import android.util.Log
-import android.view.View
-import android.widget.ProgressBar
-import kotlinx.android.synthetic.main.dialog_download.*
-import kotlinx.coroutines.isActive
 
 
 class MainActivity : AppCompatActivity() {
@@ -152,7 +154,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(apkName)
             .setView(View.inflate(this, R.layout.dialog_download, null))
             .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
-//                if (viewModelCoroutineScope.isActive) {
+                //                if (viewModelCoroutineScope.isActive) {
 //                    viewModelCoroutineScope.close()
 //                }
             }
@@ -177,7 +179,8 @@ class MainActivity : AppCompatActivity() {
         }
         requestDownloadNet?.onFinish {
             Log.i(TAG, "onFinish =  $it")
-            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
+//            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
+            installApkO(MainActivity@ this, it)
 
         }
         requestDownloadNet?.onProgress {
@@ -186,6 +189,44 @@ class MainActivity : AppCompatActivity() {
                 downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
             progressBar?.progress = it
         }
+
+    }
+
+
+    // 3.下载成功，开始安装,兼容8.0安装位置来源的权限
+    private fun installApkO(context: Context, downloadApkPath: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //是否有安装位置来源的权限
+            val haveInstallPermission = packageManager.canRequestPackageInstalls()
+            if (haveInstallPermission) {
+                installApk(context, downloadApkPath)
+            } else {
+                Toast.makeText(MainActivity@ this, haveInstallPermission.toString(), Toast.LENGTH_SHORT).show()
+                installApk(context, downloadApkPath)
+            }
+        } else {
+            installApk(context, downloadApkPath)
+        }
+    }
+
+
+    fun installApk(context: Context, downloadApk: String) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        val file = File(downloadApk)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val apkUri = FileProvider.getUriForFile(
+                context,
+                context.applicationContext.packageName + ".fileprovider",
+                file
+            )
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.setDataAndType(apkUri, "application/vnd.android.package-archive")
+        } else {
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val uri = Uri.fromFile(file)
+            intent.setDataAndType(uri, "application/vnd.android.package-archive")
+        }
+        context.startActivity(intent)
 
     }
 
