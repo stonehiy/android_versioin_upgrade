@@ -15,21 +15,15 @@ class Version<U : Upgrade>(private val ctx: Context) : IVersion<U> {
         val packageInfo = ctx
             .packageManager
             .getPackageInfo(ctx.packageName, 0)
-        var longVersionCodeLong: Long = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val longVersionCodeLong: Long = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             packageInfo.longVersionCode
         } else {
             packageInfo.versionCode.toLong()
         }
-        u.let {
-            if (it != null) {
-                _onDownload?.invoke(it, versionCode > longVersionCodeLong)
-            } else {
-                fail("apkUrl is null")
-            }
-        }
-
+        _onDownload?.invoke(u, versionCode > longVersionCodeLong)
 
     }
+
 
     override fun fail(error: String?) {
         _onFail?.invoke(error)

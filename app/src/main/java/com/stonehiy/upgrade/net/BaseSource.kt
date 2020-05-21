@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object BaseSource {
 
-    private const val baseUrl = "http://192.168.1.130:8080/"
+    private const val baseUrl = "http://192.168.1.171:8080/"
+//    private const val baseUrl = "http://192.168.1.130:8080/"
 
 
 
@@ -20,7 +21,6 @@ object BaseSource {
                     .addInterceptor(HttpLoggingInterceptor().setLevel(
                             if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
                             else HttpLoggingInterceptor.Level.NONE))
-//                    .addInterceptor(OauthBPInterceptor())
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .readTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
