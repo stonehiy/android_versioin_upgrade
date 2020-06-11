@@ -13,9 +13,9 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
-import com.stonehiy.updrade.base.net.Download
-import com.stonehiy.updrade.base.net.RequestVersion
-import com.stonehiy.updrade.base.net.Version
+import com.stonehiy.upgrade.base.net.Download
+import com.stonehiy.upgrade.base.net.RequestVersion
+import com.stonehiy.upgrade.base.net.Version
 import com.stonehiy.upgrade.entity.VersionEntity
 import com.stonehiy.upgrade.net.Api
 import com.stonehiy.upgrade.net.BaseSource
@@ -169,22 +169,23 @@ class MainActivity : AppCompatActivity() {
 
         }
         requestDownloadNet?.onStart {
+            Log.d(TAG,"onStart..")
             showDownloadDialog(versionEntity.apkUrl)
 
         }
         requestDownloadNet?.onFailure {
-            Log.i(TAG, "onFailure = $it")
+            Log.d(TAG, "onFailure = $it")
             Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
 
         }
         requestDownloadNet?.onFinish {
-            Log.i(TAG, "onFinish =  $it")
+            Log.d(TAG, "onFinish =  $it")
 //            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
             installApkO(MainActivity@ this, it)
 
         }
         requestDownloadNet?.onProgress {
-            Log.i(TAG, "onProgress =  $it")
+            Log.d(TAG, "onProgress =  $it")
             val progressBar: ProgressBar? =
                 downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
             progressBar?.progress = it
@@ -199,32 +200,34 @@ class MainActivity : AppCompatActivity() {
             //是否有安装位置来源的权限
             val haveInstallPermission = packageManager.canRequestPackageInstalls()
             if (haveInstallPermission) {
-                installApk(context, downloadApkPath)
+                installApkN(context, downloadApkPath)
             } else {
                 Toast.makeText(MainActivity@ this, haveInstallPermission.toString(), Toast.LENGTH_SHORT).show()
-                installApk(context, downloadApkPath)
+                installApkN(context, downloadApkPath)
             }
         } else {
-            installApk(context, downloadApkPath)
+            installApkN(context, downloadApkPath)
         }
     }
 
 
-    fun installApk(context: Context, downloadApk: String) {
-        val intent = Intent(Intent.ACTION_VIEW)
+    fun installApkN(context: Context, downloadApk: String) {
+        val intent = Intent()
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.action = Intent.ACTION_VIEW
         val file = File(downloadApk)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val apkUri = FileProvider.getUriForFile(
                 context,
-                context.applicationContext.packageName + ".fileprovider",
+                context.applicationContext.packageName + ".upgradeFileProvider",
                 file
             )
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             intent.setDataAndType(apkUri, "application/vnd.android.package-archive")
         } else {
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             val uri = Uri.fromFile(file)
             intent.setDataAndType(uri, "application/vnd.android.package-archive")
+
         }
         context.startActivity(intent)
 

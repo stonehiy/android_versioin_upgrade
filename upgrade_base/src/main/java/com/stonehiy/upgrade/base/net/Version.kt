@@ -1,7 +1,7 @@
-package com.stonehiy.updrade.base.net
+package com.stonehiy.upgrade.base.net
 
 import android.content.Context
-import com.stonehiy.updrade.base.Upgrade
+import com.stonehiy.upgrade.base.Upgrade
 import android.os.Build
 
 

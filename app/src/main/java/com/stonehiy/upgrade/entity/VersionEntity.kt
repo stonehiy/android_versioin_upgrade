@@ -1,6 +1,6 @@
 package com.stonehiy.upgrade.entity
 
-import com.stonehiy.updrade.base.Upgrade
+import com.stonehiy.upgrade.base.Upgrade
 
 data class VersionEntity(
     val title: String?,

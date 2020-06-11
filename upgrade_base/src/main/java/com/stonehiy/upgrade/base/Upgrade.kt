@@ -1,4 +1,4 @@
-package com.stonehiy.updrade.base
+package com.stonehiy.upgrade.base
 
 interface Upgrade {
 

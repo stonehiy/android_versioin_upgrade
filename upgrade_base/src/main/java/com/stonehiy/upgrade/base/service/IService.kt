@@ -1,4 +1,4 @@
-package com.stonehiy.updrade.base.service
+package com.stonehiy.upgrade.base.service
 
 interface IApkService {
 

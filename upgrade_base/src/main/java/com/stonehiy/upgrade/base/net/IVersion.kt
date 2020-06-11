@@ -1,6 +1,6 @@
-package com.stonehiy.updrade.base.net
+package com.stonehiy.upgrade.base.net
 
-import com.stonehiy.updrade.base.Upgrade
+import com.stonehiy.upgrade.base.Upgrade
 
 interface IVersion<U : Upgrade> {
     fun success(u: U)

@@ -1,21 +1,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.stonehiy.updrade.base">
+    package="com.stonehiy.upgrade.base">
 
     <!--Android 8.0 及以上版本需要在清单文件中配置权限：-->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <provider
-        android:name="android.support.v4.content.FileProvider"
-        android:authorities="${APPLICATIONID}.FileProvider"
-        android:exported="false"
-        android:grantUriPermissions="true"
-        tools:replace="android:authorities"
-        tools:ignore="WrongManifestParent">
-        <meta-data
-            android:name="android.support.FILE_PROVIDER_PATHS"
-            android:resource="@xml/file_path" />
-    </provider>
-
+    <application
+        android:allowBackup="true"
+        android:requestLegacyExternalStorage="true"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true">
+        <provider
+            android:name=".core.UpgradeFileProvider"
+            android:authorities="${applicationId}.upgradeFileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            tools:ignore="WrongManifestParent"
+            tools:replace="android:authorities">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/upgrade_base_file_paths" />
+        </provider>
+    </application>
 
 </manifest>

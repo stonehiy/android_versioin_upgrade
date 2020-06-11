@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <root-path
+        name="root-path"
+        path="/." />
+    <files-path
+        name="files-path"
+        path="/." />
+    <cache-path
+        name="cache-path"
+        path="/." />
+    <external-path
+        name="external-path"
+        path="/." />
+    <external-files-path
+        name="external-files-path"
+        path="/." />
+    <external-cache-path
+        name="external-cache-path"
+        path="/." />
+
+   <!--
+   root-path：表示根目录，『/』。
+    files-path：表示 content.getFileDir() 获取到的目录。
+    cache-path：表示 content.getCacheDir() 获取到的目录
+    external-path：表示Environment.getExternalStorageDirectory() 指向的目录。
+    external-files-path：表示 ContextCompat.getExternalFilesDirs() 获取到的目录。
+    external-cache-path：表示 ContextCompat.getExternalCacheDirs() 获取到的目录。
+    -->
+
+
+
+</paths>

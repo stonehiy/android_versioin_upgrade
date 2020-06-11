@@ -1,4 +1,4 @@
-package com.stonehiy.updrade.base
+package com.stonehiy.upgrade.base
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
