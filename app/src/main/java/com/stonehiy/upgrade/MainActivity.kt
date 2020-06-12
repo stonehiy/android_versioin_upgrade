@@ -13,9 +13,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
-import com.stonehiy.upgrade.base.net.Download
-import com.stonehiy.upgrade.base.net.RequestVersion
-import com.stonehiy.upgrade.base.net.Version
+import com.stonehiy.upgrade.base.core.*
 import com.stonehiy.upgrade.entity.VersionEntity
 import com.stonehiy.upgrade.net.Api
 import com.stonehiy.upgrade.net.BaseSource
@@ -34,7 +32,6 @@ class MainActivity : AppCompatActivity() {
     private val viewModelCoroutineScope: ViewModelCoroutineScope = ViewModelCoroutineScope()
 
     private var requestVersionNet: Version<VersionEntity>? = null
-    private var requestDownloadNet: Download? = null
 
     private var downloadDialog: AlertDialog? = null
 
@@ -51,9 +48,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestVersion() {
-        requestVersionNet = RequestVersion.requestVersionNet<VersionEntity>(this) {
-            version()
-        } as Version<VersionEntity>
+        requestVersionNet =
+            RequestVersion.versionNet<VersionEntity>(this) as Version<VersionEntity>
         requestVersionNet?.onDownload { u, download ->
             if (download) {
                 //需要版本更新
@@ -67,6 +63,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
 
         }
+        version()
     }
 
     private fun version() {
@@ -100,48 +97,48 @@ class MainActivity : AppCompatActivity() {
         viewModelCoroutineScope.close()
     }
 
-    private fun download(fileUrl: String) {
-        val api = BaseSource
-            .instance
-            .create(Api::class.java)
 
-        viewModelCoroutineScope.launch {
-            withContext(Dispatchers.Main) {
-                try {
-                    val await = api.downloadApk(fileUrl).await()
-                    if (await.isSuccessful) {
-                        val body = await.body()
-                        val byteStream = body?.byteStream()
-                        val contentLength = body?.contentLength() ?: 0L
-                        requestDownloadNet?.writeFile2Disk(
-                            byteStream,
-                            contentLength,
-                            File("${getExternalFilesDir(null)?.absoluteFile}${File.separator}${fileUrl}")!!
-                        )
-
-                    } else {
-                        requestVersionNet?.fail(await.errorBody()?.string())
-                    }
-                } catch (e: Exception) {
-                    requestVersionNet?.fail(e.message)
-                }
+    private fun androidDownloadManager(downloadUrl: String) {
+        val androidDownloadManager = AndroidDownloadManager(this, downloadUrl)
+        androidDownloadManager.setListener(object : DownloadListener {
+            override fun onPrepare() {
+                Log.i(TAG, "准备下载")
+                showDownloadDialog(downloadUrl)
 
             }
 
-        }
+            override fun onDownLoading(progress: Int) {
+                Log.i(TAG, "onDownLoading = $progress");
+                val progressBar: ProgressBar? =
+                    downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
+                progressBar?.progress = progress
+            }
+
+            override fun onSuccess(path: String?) {
+                Log.i(TAG, "下载成功 path = $path");
+                path?.let { installApkO(this@MainActivity, it) }
+            }
+
+            override fun onFailed(throwable: Throwable?) {
+                Log.i(TAG, "onFailed = ${throwable?.message}");
+                Toast.makeText(this@MainActivity, throwable?.message, Toast.LENGTH_SHORT).show()
+            }
+
+        })
+        androidDownloadManager.download()
+
     }
 
     private fun showVersionDialog(versionEntity: VersionEntity) {
         val dialog = AlertDialog.Builder(this)
-            .setTitle("${versionEntity.title()} - ${versionEntity.versionName()} - ${versionEntity.versionCode()}")
+        dialog.setTitle("${versionEntity.title()} - ${versionEntity.versionName()} - ${versionEntity.versionCode()}")
             .setMessage(versionEntity.msg)
             .setPositiveButton("升级") { d: DialogInterface, i: Int ->
                 //                Toast.makeText(this, versionEntity.versionName, Toast.LENGTH_SHORT) .show()
-                requestDownload(versionEntity)
+                versionEntity.apkUrl?.let { androidDownloadManager(BaseSource.baseUrl + it) }
             }
             .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
                 //                Toast.makeText(this, "取消", Toast.LENGTH_SHORT).show()
-
             }
             .show()
 
@@ -161,38 +158,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun requestDownload(versionEntity: VersionEntity) {
-        requestDownloadNet = RequestVersion.requestDownloadNet {
-            versionEntity.apkUrl()?.let {
-                download(it)
-            }
-
-        }
-        requestDownloadNet?.onStart {
-            Log.d(TAG,"onStart..")
-            showDownloadDialog(versionEntity.apkUrl)
-
-        }
-        requestDownloadNet?.onFailure {
-            Log.d(TAG, "onFailure = $it")
-            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
-
-        }
-        requestDownloadNet?.onFinish {
-            Log.d(TAG, "onFinish =  $it")
-//            Toast.makeText(MainActivity@ this, it, Toast.LENGTH_SHORT).show()
-            installApkO(MainActivity@ this, it)
-
-        }
-        requestDownloadNet?.onProgress {
-            Log.d(TAG, "onProgress =  $it")
-            val progressBar: ProgressBar? =
-                downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
-            progressBar?.progress = it
-        }
-
-    }
-
 
     // 3.下载成功，开始安装,兼容8.0安装位置来源的权限
     private fun installApkO(context: Context, downloadApkPath: String) {
@@ -202,7 +167,11 @@ class MainActivity : AppCompatActivity() {
             if (haveInstallPermission) {
                 installApkN(context, downloadApkPath)
             } else {
-                Toast.makeText(MainActivity@ this, haveInstallPermission.toString(), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    MainActivity@ this,
+                    haveInstallPermission.toString(),
+                    Toast.LENGTH_SHORT
+                ).show()
                 installApkN(context, downloadApkPath)
             }
         } else {

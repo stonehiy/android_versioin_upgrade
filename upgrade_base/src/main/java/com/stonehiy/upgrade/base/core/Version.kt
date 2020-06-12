@@ -1,11 +1,12 @@
-package com.stonehiy.upgrade.base.net
+package com.stonehiy.upgrade.base.core
 
 import android.content.Context
 import com.stonehiy.upgrade.base.Upgrade
 import android.os.Build
 
 
-class Version<U : Upgrade>(private val ctx: Context) : IVersion<U> {
+class Version<U : Upgrade>(private val ctx: Context) :
+    VersionListener<U> {
 
     private var _onDownload: ((u: U, download: Boolean) -> Unit)? = null
     private var _onFail: ((error: String?) -> Unit)? = null
@@ -29,12 +30,12 @@ class Version<U : Upgrade>(private val ctx: Context) : IVersion<U> {
         _onFail?.invoke(error)
     }
 
-    fun onDownload(listener: (u: U, download: Boolean) -> Unit): IVersion<U> {
+    fun onDownload(listener: (u: U, download: Boolean) -> Unit): VersionListener<U> {
         _onDownload = listener
         return this
     }
 
-    fun onFail(listener: (error: String?) -> Unit): IVersion<U> {
+    fun onFail(listener: (error: String?) -> Unit): VersionListener<U> {
         _onFail = listener
         return this
     }

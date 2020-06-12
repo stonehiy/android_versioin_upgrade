@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 object BaseSource {
 
-    private const val baseUrl = "http://192.168.1.171:8080/"
+    const val baseUrl = "http://192.168.1.171:8080/"
 //    private const val baseUrl = "http://192.168.1.130:8080/"
 
 

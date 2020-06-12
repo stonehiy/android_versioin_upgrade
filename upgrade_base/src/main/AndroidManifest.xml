@@ -21,6 +21,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/upgrade_base_file_paths" />
         </provider>
+
+
+        <receiver android:name=".core.DownloadManagerReceiver">
+            <intent-filter>
+                <!-- 配置 点击通知 和 下载完成 两个 action -->
+                <action android:name="android.intent.action.DOWNLOAD_NOTIFICATION_CLICKED"/>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

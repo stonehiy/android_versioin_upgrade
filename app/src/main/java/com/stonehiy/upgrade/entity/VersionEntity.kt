@@ -4,11 +4,11 @@ import com.stonehiy.upgrade.base.Upgrade
 
 data class VersionEntity(
     val title: String?,
-    val versionCode: Int,
-    val versionName: String,
-    val msg: String,
+    val versionCode: Int = 0,
+    val versionName: String?,
+    val msg: String?,
     val force: Boolean,
-    val apkUrl: String
+    val apkUrl: String?
 ) : Upgrade {
     override fun apkUrl(): String? {
         return apkUrl

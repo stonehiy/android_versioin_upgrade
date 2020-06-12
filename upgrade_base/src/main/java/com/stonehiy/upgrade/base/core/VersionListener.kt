@@ -1,8 +1,8 @@
-package com.stonehiy.upgrade.base.net
+package com.stonehiy.upgrade.base.core
 
 import com.stonehiy.upgrade.base.Upgrade
 
-interface IVersion<U : Upgrade> {
+interface VersionListener<U : Upgrade> {
     fun success(u: U)
 
     fun fail(error: String?)
