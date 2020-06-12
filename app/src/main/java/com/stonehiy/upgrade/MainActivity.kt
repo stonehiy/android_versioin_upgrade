@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -14,6 +15,7 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.Toast
 import com.stonehiy.upgrade.base.core.*
+import com.stonehiy.upgrade.base.net.DownloadTaskManager
 import com.stonehiy.upgrade.entity.VersionEntity
 import com.stonehiy.upgrade.net.Api
 import com.stonehiy.upgrade.net.BaseSource
@@ -98,34 +100,39 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun androidDownloadManager(downloadUrl: String) {
-        val androidDownloadManager = AndroidDownloadManager(this, downloadUrl)
-        androidDownloadManager.setListener(object : DownloadListener {
-            override fun onPrepare() {
-                Log.i(TAG, "准备下载")
+    private fun downloadTask(downloadUrl: String) {
+        val taskManager = DownloadTaskManager.instance()
+        taskManager.startTask(this, downloadUrl, 0)
+        taskManager.onPrepare { downloadId, taskId ->
+            val threadName = Thread.currentThread().name
+            Log.i(TAG, "onPrepare.....threadName = $threadName")
+            runOnUiThread {
+                val threadName = Thread.currentThread().name
+                Log.i(TAG, "onPrepare.....runOnUiThread = $threadName")
                 showDownloadDialog(downloadUrl)
-
             }
 
-            override fun onDownLoading(progress: Int) {
-                Log.i(TAG, "onDownLoading = $progress");
+
+        }
+        taskManager.onDownLoading { progress, taskId ->
+            runOnUiThread {
                 val progressBar: ProgressBar? =
                     downloadDialog?.findViewById<ProgressBar>(R.id.progressBar)
                 progressBar?.progress = progress
             }
+        }
 
-            override fun onSuccess(path: String?) {
-                Log.i(TAG, "下载成功 path = $path");
+        taskManager.onSuccess { path, taskId ->
+            runOnUiThread {
                 path?.let { installApkO(this@MainActivity, it) }
             }
 
-            override fun onFailed(throwable: Throwable?) {
-                Log.i(TAG, "onFailed = ${throwable?.message}");
+        }
+        taskManager.onFailed { throwable, taskId ->
+            runOnUiThread {
                 Toast.makeText(this@MainActivity, throwable?.message, Toast.LENGTH_SHORT).show()
             }
-
-        })
-        androidDownloadManager.download()
+        }
 
     }
 
@@ -135,7 +142,7 @@ class MainActivity : AppCompatActivity() {
             .setMessage(versionEntity.msg)
             .setPositiveButton("升级") { d: DialogInterface, i: Int ->
                 //                Toast.makeText(this, versionEntity.versionName, Toast.LENGTH_SHORT) .show()
-                versionEntity.apkUrl?.let { androidDownloadManager(BaseSource.baseUrl + it) }
+                versionEntity.apkUrl?.let { downloadTask(BaseSource.baseUrl + it) }
             }
             .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
                 //                Toast.makeText(this, "取消", Toast.LENGTH_SHORT).show()

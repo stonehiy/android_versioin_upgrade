@@ -15,7 +15,8 @@ import java.math.BigDecimal
  */
 class AndroidDownloadManager constructor(
     private val context: Context,
-    private val url: String
+    private val url: String,
+    private val taskId: Int = 0
 ) {
     private val TAG = "AndroidDownloadManager"
     private var name: String = getFileNameByUrl(url)
@@ -32,7 +33,7 @@ class AndroidDownloadManager constructor(
      * 开始下载
      */
     fun download() {
-        listener?.onPrepare()
+
         val request = DownloadManager.Request(Uri.parse(url))
         //移动网络情况下是否允许漫游
         request.setAllowedOverRoaming(false)
@@ -64,6 +65,7 @@ class AndroidDownloadManager constructor(
         // 通过该id可以取消任务，重启任务、获取下载的文件等等
         if (downloadManager != null) {
             downloadId = downloadManager?.enqueue(request) ?: 0L
+            listener?.onPrepare(downloadId, taskId)
         }
         checkStatus()
     }
@@ -103,16 +105,16 @@ class AndroidDownloadManager constructor(
                         )
                         val dProgress =
                             deciMal(bytesAndStatus[0], bytesAndStatus[1])
-                        listener?.onDownLoading((dProgress * 100).toInt())
+                        listener?.onDownLoading((dProgress * 100).toInt(), taskId)
                     }
                     DownloadManager.STATUS_SUCCESSFUL -> {
-                        listener?.onDownLoading(100)
-                        listener?.onSuccess(path)
+                        listener?.onDownLoading(100, taskId)
+                        listener?.onSuccess(path, taskId)
                         cursor.close()
                         isRuning = false
                     }
                     DownloadManager.STATUS_FAILED -> {
-                        listener?.onFailed(Exception("下载失败"))
+                        listener?.onFailed(Exception("下载失败"), taskId)
                         cursor.close()
                         isRuning = false
                     }
