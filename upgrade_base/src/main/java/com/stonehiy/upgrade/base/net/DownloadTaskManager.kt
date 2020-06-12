@@ -53,6 +53,7 @@ class DownloadTaskManager private constructor() {
             }
 
             override fun onSuccess(path: String?, taskId: Int) {
+                tasKMap.remove(taskId)
                 _onSuccess?.invoke(path, taskId)
 //                Log.i(TAG, "下载成功 path = $path");
 //                path?.let { installApkO(this@MainActivity, it) }
