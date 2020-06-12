@@ -160,7 +160,10 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("取消") { dialogInterface: DialogInterface, i: Int ->
                 //                if (viewModelCoroutineScope.isActive) {
 //                    viewModelCoroutineScope.close()
+
 //                }
+                val taskManager = DownloadTaskManager.instance()
+                taskManager.remove(0)
             }
             .show()
     }

@@ -29,6 +29,7 @@ class DownloadTaskManager private constructor() {
 
     private val fixedThreadPool = Executors.newFixedThreadPool(3)
     private val tasKMap = HashMap<Int, Long>()
+    private val androidDownloadManagerMap = HashMap<Int, AndroidDownloadManager>()
 
     fun startTask(context: Context, downloadUrl: String, taskId: Int) {
         if (tasKMap.containsKey(taskId)) {
@@ -38,6 +39,7 @@ class DownloadTaskManager private constructor() {
         androidDownloadManager.setListener(object : DownloadListener {
             override fun onPrepare(downloadId: Long, taskId: Int) {
                 tasKMap[taskId] = downloadId
+                androidDownloadManagerMap[taskId] = androidDownloadManager
                 _onPrepare?.invoke(downloadId, taskId)
 //                Log.i(TAG, "准备下载")
 //                showDownloadDialog(downloadUrl)
@@ -54,6 +56,7 @@ class DownloadTaskManager private constructor() {
 
             override fun onSuccess(path: String?, taskId: Int) {
                 tasKMap.remove(taskId)
+                androidDownloadManagerMap.remove(taskId)
                 _onSuccess?.invoke(path, taskId)
 //                Log.i(TAG, "下载成功 path = $path");
 //                path?.let { installApkO(this@MainActivity, it) }
@@ -61,6 +64,7 @@ class DownloadTaskManager private constructor() {
 
             override fun onFailed(throwable: Throwable?, taskId: Int) {
                 tasKMap.remove(taskId)
+                androidDownloadManagerMap.remove(taskId)
                 _onFailed?.invoke(throwable, taskId)
 //                Log.i(TAG, "onFailed = ${throwable?.message}");
 //                Toast.makeText(this@MainActivity, throwable?.message, Toast.LENGTH_SHORT).show()
@@ -90,6 +94,14 @@ class DownloadTaskManager private constructor() {
 
     fun onFailed(listener: (throwable: Throwable?, taskId: Int) -> Unit) {
         _onFailed = listener
+    }
+
+    fun remove(taskId: Int) {
+        val id = tasKMap[taskId]
+        val androidDownloadManager = androidDownloadManagerMap[taskId]
+        id?.let { androidDownloadManager?.remove(it) }
+        androidDownloadManagerMap.remove(taskId)
+        tasKMap.remove(taskId)
     }
 
 

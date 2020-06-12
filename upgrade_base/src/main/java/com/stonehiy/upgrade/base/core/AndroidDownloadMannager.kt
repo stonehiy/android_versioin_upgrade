@@ -20,7 +20,8 @@ class AndroidDownloadManager constructor(
 ) {
     private val TAG = "AndroidDownloadManager"
     private var name: String = getFileNameByUrl(url)
-    private var downloadManager: DownloadManager? = null
+    private var downloadManager: DownloadManager? =
+        context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var downloadId: Long = 0
     private var path: String? = null
     private var listener: DownloadListener? = null
@@ -33,7 +34,6 @@ class AndroidDownloadManager constructor(
      * 开始下载
      */
     fun download() {
-
         val request = DownloadManager.Request(Uri.parse(url))
         //移动网络情况下是否允许漫游
         request.setAllowedOverRoaming(false)
@@ -55,18 +55,10 @@ class AndroidDownloadManager constructor(
         )
         request.setDestinationUri(Uri.fromFile(file))
         path = file.absolutePath
-
-        //获取DownloadManager
-        if (downloadManager == null) {
-            downloadManager =
-                context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        }
         //将下载请求加入下载队列，加入下载队列后会给该任务返回一个long型的id，
         // 通过该id可以取消任务，重启任务、获取下载的文件等等
-        if (downloadManager != null) {
-            downloadId = downloadManager?.enqueue(request) ?: 0L
-            listener?.onPrepare(downloadId, taskId)
-        }
+        downloadId = downloadManager?.enqueue(request) ?: 0L
+        listener?.onPrepare(downloadId, taskId)
         checkStatus()
     }
 
@@ -122,8 +114,13 @@ class AndroidDownloadManager constructor(
             } else {
                 Log.i(TAG, "下载文件不存在")
                 cursor?.close()
+                isRuning = false
             }
         }
+    }
+
+    fun remove(ids: Long) {
+        downloadManager?.remove(ids)
     }
 
     private fun deciMal(top: Int, below: Int): Double {
